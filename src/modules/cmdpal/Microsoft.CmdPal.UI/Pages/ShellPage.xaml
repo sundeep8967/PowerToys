@@ -483,7 +483,7 @@
                         <tkcontrols:MarkdownTextBlock
                             Grid.Row="2"
                             Margin="0,4,0,24"
-                            Background="Transparent"
+                            Background="{ThemeResource ControlFillColorDefaultBrush}"
                             Config="{StaticResource DefaultMarkdownConfig}"
                             IsTabStop="False"
                             Text="{x:Bind ViewModel.Details.Body, Mode=OneWay}"

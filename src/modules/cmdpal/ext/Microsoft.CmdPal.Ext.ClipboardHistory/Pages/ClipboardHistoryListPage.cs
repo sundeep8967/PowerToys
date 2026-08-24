@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CmdPal.Ext.ClipboardHistory.Helpers;
@@ -78,7 +79,7 @@ internal sealed partial class ClipboardHistoryListPage : ListPage
                 return;
             }
 
-            var historyItems = await Clipboard.GetHistoryItemsAsync();
+            var historyItems = await Clipboard.GetHistoryItemsAsync().AsTask().ConfigureAwait(false);
             if (historyItems.Status != ClipboardHistoryItemsResultStatus.Success)
             {
                 return;
@@ -88,7 +89,7 @@ internal sealed partial class ClipboardHistoryListPage : ListPage
             {
                 if (item.Content.Contains(StandardDataFormats.Text))
                 {
-                    var text = await item.Content.GetTextAsync();
+                    var text = await item.Content.GetTextAsync().AsTask().ConfigureAwait(false);
                     items.Add(new ClipboardItem { Settings = _settingsManager, Content = text, Item = item });
                 }
                 else if (item.Content.Contains(StandardDataFormats.Bitmap))
@@ -103,11 +104,12 @@ internal sealed partial class ClipboardHistoryListPage : ListPage
             {
                 if (item.Item.Content.Contains(StandardDataFormats.Bitmap))
                 {
-                    var imageReceived = await item.Item.Content.GetBitmapAsync();
+                    var imageReceived = await item.Item.Content.GetBitmapAsync().AsTask().ConfigureAwait(false);
 
                     if (imageReceived is not null)
                     {
                         item.ImageData = imageReceived;
+                        item.ImageBytes = await ReadImageBytesAsync(imageReceived).ConfigureAwait(false);
                     }
                 }
 
@@ -120,6 +122,23 @@ internal sealed partial class ClipboardHistoryListPage : ListPage
             // Logger.LogError("Loading clipboard history failed", ex);
             ExtensionHost.ShowStatus(new StatusMessage() { Message = Properties.Resources.clipboard_failed_to_load, State = MessageState.Error }, StatusContext.Page);
             ExtensionHost.LogMessage(ex.ToString());
+        }
+    }
+
+    private static async Task<byte[]?> ReadImageBytesAsync(global::Windows.Storage.Streams.RandomAccessStreamReference imageData)
+    {
+        try
+        {
+            using var stream = await imageData.OpenReadAsync().AsTask().ConfigureAwait(false);
+            using var input = stream.AsStreamForRead();
+            using var output = new MemoryStream();
+            await input.CopyToAsync(output).ConfigureAwait(false);
+            return output.ToArray();
+        }
+        catch (Exception ex)
+        {
+            ExtensionHost.LogMessage($"Failed to cache clipboard image data: {ex}");
+            return null;
         }
     }
 

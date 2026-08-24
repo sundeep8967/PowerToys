@@ -4,8 +4,6 @@
 
 using System;
 using System.Text.RegularExpressions;
-using ManagedCommon;
-using Windows.Storage.Streams;
 
 namespace Microsoft.CmdPal.Ext.ClipboardHistory.Helpers;
 
@@ -24,28 +22,9 @@ internal static partial class DetailsMarkdownHelper
     [GeneratedRegex(@"([\\`*_{}\[\]()#+\-.!>|~])")]
     private static partial Regex MarkdownSpecialCharacters();
 
-    public static string BuildImageBody(RandomAccessStreamReference? imageData, string altText)
+    public static string BuildImageBody(byte[]? imageBytes, string altText)
     {
-        if (imageData is null)
-        {
-            return string.Empty;
-        }
-
-        try
-        {
-            using var stream = imageData.OpenReadAsync().AsTask().GetAwaiter().GetResult();
-            using var reader = new DataReader(stream.GetInputStreamAt(0));
-            reader.LoadAsync((uint)stream.Size).AsTask().GetAwaiter().GetResult();
-            var bytes = new byte[stream.Size];
-            reader.ReadBytes(bytes);
-
-            return BuildImageBodyFromBytes(bytes, altText);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogDebug("Failed to build image preview for details:" + ex);
-            return string.Empty;
-        }
+        return imageBytes is null ? string.Empty : BuildImageBodyFromBytes(imageBytes, altText);
     }
 
     public static string BuildImageBodyFromBytes(byte[] imageBytes, string altText)

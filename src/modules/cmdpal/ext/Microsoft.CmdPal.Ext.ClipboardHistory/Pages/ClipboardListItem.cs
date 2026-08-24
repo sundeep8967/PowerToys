@@ -234,7 +234,7 @@ internal sealed partial class ClipboardListItem : ListItem
             return new Details
             {
                 Title = _item.GetDataType(),
-                Body = DetailsMarkdownHelper.BuildImageBody(_item.ImageData, Properties.Resources.clipboard_item_image_title),
+                Body = DetailsMarkdownHelper.BuildImageBody(_item.ImageBytes, Properties.Resources.clipboard_item_image_title),
                 Metadata = [.. metadata],
             };
         }
